@@ -28,6 +28,10 @@ The Kingdom Treasury Smart Contract allows:
 - **Arrays and Mappings**: Manages lists of citizens and their information.
 - **Events**: Logs important actions for transparency and tracking.
 
+## Pseudo Code
+
+I created a pseudo code version of the contract to design and understand this smart contract better,. The pseudo code helps in visualizing the structure and logic of the contract in a simplified manner. You can find the pseudo code in this repo to get a clear idea of how the contract is organized and functions before diving into the Solidity code.
+
 ## Usage
 
 - **Become a Citizen**: Call the `becomeCitizen` function to register as a citizen.
