@@ -38,3 +38,125 @@ I created a pseudo code version of the contract to design and understand this sm
 - **Deposit Ether**: Use the `deposit` function to add funds to the treasury.
 - **Withdraw Ether**: Use the `withdraw` function to retrieve your funds.
 - **Declare Holiday**: If you are the king, call the `declareHoliday` function to declare a holiday.
+
+## Smart Contract Code
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+// Contract Structure
+contract KingdomTreasury {
+
+    // Variables
+    address public king;
+    uint256 public totalFunds;
+
+    // Types
+    struct Citizen {
+        uint256 balance;
+        bool isCitizen;
+    }
+
+    // Mappings
+    mapping(address => Citizen) public citizens;
+
+    // Modifiers
+    modifier onlyKing() {
+        require(msg.sender == king, "Only the king can perform this action.");
+        _;
+    }
+
+    // Custom Modifiers
+    modifier onlyCitizen() {
+        require(citizens[msg.sender].isCitizen, "Only citizens can perform this action.");
+        _;
+    }
+
+    // Constructors
+    constructor() {
+        king = msg.sender;
+    }
+
+    // Functions
+    function becomeCitizen() public {
+        require(!citizens[msg.sender].isCitizen, "Already a citizen.");
+        citizens[msg.sender] = Citizen(0, true);
+    }
+
+    function deposit() public payable onlyCitizen {
+        citizens[msg.sender].balance += msg.value;
+        totalFunds += msg.value;
+        emit Deposit(msg.sender, msg.value);
+    }
+
+    function withdraw(uint256 amount) public onlyCitizen {
+        require(citizens[msg.sender].balance >= amount, "Insufficient balance.");
+        citizens[msg.sender].balance -= amount;
+        totalFunds -= amount;
+        payable(msg.sender).transfer(amount);
+        emit Withdraw(msg.sender, amount);
+    }
+
+    function declareHoliday() public onlyKing {
+        emit HolidayDeclared("A holiday has been declared by the king!");
+    }
+
+    // Global Variables
+    function getBlockTimestamp() public view returns (uint256) {
+        return block.timestamp;
+    }
+
+    // Operators and Conditionals
+    function checkBalance(address citizen) public view returns (string memory) {
+        if (citizens[citizen].balance > 1 ether) {
+            return "Wealthy citizen";
+        } else {
+            return "Regular citizen";
+        }
+    }
+
+    // Arrays
+    address[] public citizenList;
+
+    function addCitizenToList(address citizen) public onlyKing {
+        citizenList.push(citizen);
+    }
+
+    // Structs
+    function getCitizenInfo(address citizen) public view returns (uint256, bool) {
+        Citizen memory c = citizens[citizen];
+        return (c.balance, c.isCitizen);
+    }
+
+    // Events
+    event Deposit(address indexed citizen, uint256 amount);
+    event Withdraw(address indexed citizen, uint256 amount);
+    event HolidayDeclared(string message);
+
+    // Ether
+    function kingdomBalance() public view returns (uint256) {
+        return address(this).balance;
+    }
+
+    // Errors
+    error InsufficientFunds(uint256 requested, uint256 available);
+
+    // Inheritance
+    // This contract could inherit from a more complex contract if needed
+
+    // Calling Other Contracts
+    function callAnotherContract(address otherContract) public {
+        OtherContract(otherContract).receiveMessage("Hello from KingdomTreasury");
+    }
+
+    // Interfaces
+    interface OtherContract {
+        function receiveMessage(string memory message) external;
+    }
+}
+```
+
+## License
+
+This project is licensed under the MIT License.
