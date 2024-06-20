@@ -1,0 +1,98 @@
+
+// Define the KingdomTreasury contract
+Contract KingdomTreasury:
+
+    // Declare state variables
+    Declare king as address
+    Declare totalFunds as uint256
+
+    // Define a struct for Citizen
+    Struct Citizen:
+        Declare balance as uint256
+        Declare isCitizen as boolean
+
+    // Create a mapping to store citizens
+    Declare citizens as mapping(address => Citizen)
+
+    // Define modifier to restrict access to the king
+    Modifier onlyKing:
+        Require caller is king
+        Proceed
+
+    // Define modifier to restrict access to citizens
+    Modifier onlyCitizen:
+        Require caller is a citizen
+        Proceed
+
+    // Constructor to set the king
+    Function constructor:
+        Set king to caller's address
+
+    // Function to become a citizen
+    Function becomeCitizen:
+        Require caller is not already a citizen
+        Add caller to citizens with balance 0 and isCitizen true
+
+    // Function to deposit Ether
+    Function deposit:
+        Only accessible by citizens
+        Add sent value to caller's balance
+        Add sent value to totalFunds
+        Emit Deposit event
+
+    // Function to withdraw Ether
+    Function withdraw(amount):
+        Only accessible by citizens
+        Require caller's balance is at least amount
+        Subtract amount from caller's balance
+        Subtract amount from totalFunds
+        Transfer amount to caller
+        Emit Withdraw event
+
+    // Function for the king to declare a holiday
+    Function declareHoliday:
+        Only accessible by the king
+        Emit HolidayDeclared event
+
+    // Function to get the current block timestamp
+    Function getBlockTimestamp:
+        Return current block timestamp
+
+    // Function to check balance and categorize citizen
+    Function checkBalance(citizen):
+        If citizen's balance is greater than 1 Ether:
+            Return "Wealthy citizen"
+        Else:
+            Return "Regular citizen"
+
+    // Declare an array to store citizen addresses
+    Declare citizenList as array of addresses
+
+    // Function to add a citizen to the list
+    Function addCitizenToList(citizen):
+        Only accessible by the king
+        Add citizen to citizenList
+
+    // Function to get citizen information
+    Function getCitizenInfo(citizen):
+        Return citizen's balance and isCitizen status
+
+    // Declare events for deposit, withdrawal, and holiday declaration
+    Event Deposit(citizen, amount)
+    Event Withdraw(citizen, amount)
+    Event HolidayDeclared(message)
+
+    // Function to get the total Ether balance of the contract
+    Function kingdomBalance:
+        Return contract's Ether balance
+
+    // Declare custom error for insufficient funds (not used in functions)
+    Error InsufficientFunds(requested, available)
+
+    // Function to call another contract
+    Function callAnotherContract(otherContract):
+        Call receiveMessage function on otherContract with message "Hello from KingdomTreasury"
+
+    // Define an interface for another contract
+    Interface OtherContract:
+        Function receiveMessage(message)
