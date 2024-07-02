@@ -1,33 +1,47 @@
 Contract KingdomTreasury inherits BaseTreasury:
+    // Variable to store the address of the king
     Variable king: Address
+    
+    // Variable to store the total funds in the treasury
     Variable totalFunds: UInt256
     
+    // Structure to define a citizen with a balance and citizenship status
     Struct Citizen:
         balance: UInt256
         isCitizen: Boolean
     
+    // Mapping to store citizens based on their addresses
     Mapping citizens: Address -> Citizen
     
+    // Modifier to restrict function access to the king
     Modifier onlyKing:
         Require msg.sender == king
     
+    // Modifier to restrict function access to citizens
     Modifier onlyCitizen:
         Require citizens[msg.sender].isCitizen
     
+    // Constructor to set the deploying address as the king
     Constructor:
         Set king to msg.sender
     
-    Function becomeCitizen() -> void:
+    // Function to become a citizen
+    // Sets the sender's address as a citizen with a balance of 0
+    Function becomeCitizen():
         Require citizens[msg.sender].isCitizen == False
         Set citizens[msg.sender] to Citizen(0, True)
     
-    Function deposit() -> void:
+    // Function to deposit Ether into the treasury
+    // Increases the sender's balance and the total funds
+    Function deposit():
         Require onlyCitizen
         Increase citizens[msg.sender].balance by msg.value
         Increase totalFunds by msg.value
         Emit Deposit(citizen: msg.sender, amount: msg.value)
     
-    Function withdraw(amount: UInt256) -> void:
+    // Function to withdraw Ether from the treasury
+    // Decreases the sender's balance and the total funds
+    Function withdraw(amount: UInt256):
         Require onlyCitizen
         If citizens[msg.sender].balance < amount:
             Revert with InsufficientFunds(requested: amount, available: citizens[msg.sender].balance)
@@ -36,34 +50,60 @@ Contract KingdomTreasury inherits BaseTreasury:
         Call transferFunds(recipient: msg.sender, amount: amount)
         Emit Withdraw(citizen: msg.sender, amount: amount)
     
-    Function declareHoliday() -> void:
+    // Function for the king to declare a holiday
+    // Emits the HolidayDeclared event
+    Function declareHoliday():
         Require onlyKing
         Emit HolidayDeclared(message: "A holiday has been declared by the king!")
     
+    // Function to get the current block timestamp
+    // Returns: The current block timestamp
     Function getBlockTimestamp() -> UInt256:
         Return current block timestamp
     
+    // Function to check a citizen's balance and categorize them
+    // Parameters:
+    //   citizen: The address of the citizen to check
+    // Returns: "Wealthy citizen" if balance > 1 ether, else "Regular citizen"
     Function checkBalance(citizen: Address) -> String:
         If citizens[citizen].balance > 1 ether:
             Return "Wealthy citizen"
         Else:
             Return "Regular citizen"
     
-    Function addCitizenToList(citizen: Address) -> void:
+    // Function to add a citizen to the list
+    // Parameters:
+    //   citizen: The address of the citizen to add
+    Function addCitizenToList(citizen: Address):
         Require onlyKing
         Add citizen to citizenList
     
+    // Function to get information about a citizen
+    // Parameters:
+    //   citizen: The address of the citizen to get information about
+    // Returns: The balance and citizenship status of the citizen
     Function getCitizenInfo(citizen: Address) -> (UInt256, Boolean):
         Return citizens[citizen].balance, citizens[citizen].isCitizen
     
+    // Event to log deposits
     Event Deposit(citizen: Address, amount: UInt256)
+    
+    // Event to log withdrawals
     Event Withdraw(citizen: Address, amount: UInt256)
+    
+    // Event to declare a holiday
     Event HolidayDeclared(message: String)
     
+    // Function to get the total balance of the treasury
+    // Returns: The balance of the contract in Ether
     Function kingdomBalance() -> UInt256:
         Return contract balance
     
+    // Error to indicate insufficient funds
     Error InsufficientFunds(requested: UInt256, available: UInt256)
     
-    Function callAnotherContract(otherContract: Address) -> void:
+    // Function to call another contract implementing the IReceiver interface
+    // Parameters:
+    //   otherContract: The address of the other contract to call
+    Function callAnotherContract(otherContract: Address):
         Call IReceiver(otherContract).receiveMessage("Hello from KingdomTreasury")
