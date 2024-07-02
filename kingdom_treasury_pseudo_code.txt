@@ -1,98 +1,69 @@
-
-// Define the KingdomTreasury contract
-Contract KingdomTreasury:
-
-    // Declare state variables
-    Declare king as address
-    Declare totalFunds as uint256
-
-    // Define a struct for Citizen
+Contract KingdomTreasury inherits BaseTreasury:
+    Variable king: Address
+    Variable totalFunds: UInt256
+    
     Struct Citizen:
-        Declare balance as uint256
-        Declare isCitizen as boolean
-
-    // Create a mapping to store citizens
-    Declare citizens as mapping(address => Citizen)
-
-    // Define modifier to restrict access to the king
+        balance: UInt256
+        isCitizen: Boolean
+    
+    Mapping citizens: Address -> Citizen
+    
     Modifier onlyKing:
-        Require caller is king
-        Proceed
-
-    // Define modifier to restrict access to citizens
+        Require msg.sender == king
+    
     Modifier onlyCitizen:
-        Require caller is a citizen
-        Proceed
-
-    // Constructor to set the king
-    Function constructor:
-        Set king to caller's address
-
-    // Function to become a citizen
-    Function becomeCitizen:
-        Require caller is not already a citizen
-        Add caller to citizens with balance 0 and isCitizen true
-
-    // Function to deposit Ether
-    Function deposit:
-        Only accessible by citizens
-        Add sent value to caller's balance
-        Add sent value to totalFunds
-        Emit Deposit event
-
-    // Function to withdraw Ether
-    Function withdraw(amount):
-        Only accessible by citizens
-        Require caller's balance is at least amount
-        Subtract amount from caller's balance
-        Subtract amount from totalFunds
-        Transfer amount to caller
-        Emit Withdraw event
-
-    // Function for the king to declare a holiday
-    Function declareHoliday:
-        Only accessible by the king
-        Emit HolidayDeclared event
-
-    // Function to get the current block timestamp
-    Function getBlockTimestamp:
+        Require citizens[msg.sender].isCitizen
+    
+    Constructor:
+        Set king to msg.sender
+    
+    Function becomeCitizen() -> void:
+        Require citizens[msg.sender].isCitizen == False
+        Set citizens[msg.sender] to Citizen(0, True)
+    
+    Function deposit() -> void:
+        Require onlyCitizen
+        Increase citizens[msg.sender].balance by msg.value
+        Increase totalFunds by msg.value
+        Emit Deposit(citizen: msg.sender, amount: msg.value)
+    
+    Function withdraw(amount: UInt256) -> void:
+        Require onlyCitizen
+        If citizens[msg.sender].balance < amount:
+            Revert with InsufficientFunds(requested: amount, available: citizens[msg.sender].balance)
+        Decrease citizens[msg.sender].balance by amount
+        Decrease totalFunds by amount
+        Call transferFunds(recipient: msg.sender, amount: amount)
+        Emit Withdraw(citizen: msg.sender, amount: amount)
+    
+    Function declareHoliday() -> void:
+        Require onlyKing
+        Emit HolidayDeclared(message: "A holiday has been declared by the king!")
+    
+    Function getBlockTimestamp() -> UInt256:
         Return current block timestamp
-
-    // Function to check balance and categorize citizen
-    Function checkBalance(citizen):
-        If citizen's balance is greater than 1 Ether:
+    
+    Function checkBalance(citizen: Address) -> String:
+        If citizens[citizen].balance > 1 ether:
             Return "Wealthy citizen"
         Else:
             Return "Regular citizen"
-
-    // Declare an array to store citizen addresses
-    Declare citizenList as array of addresses
-
-    // Function to add a citizen to the list
-    Function addCitizenToList(citizen):
-        Only accessible by the king
+    
+    Function addCitizenToList(citizen: Address) -> void:
+        Require onlyKing
         Add citizen to citizenList
-
-    // Function to get citizen information
-    Function getCitizenInfo(citizen):
-        Return citizen's balance and isCitizen status
-
-    // Declare events for deposit, withdrawal, and holiday declaration
-    Event Deposit(citizen, amount)
-    Event Withdraw(citizen, amount)
-    Event HolidayDeclared(message)
-
-    // Function to get the total Ether balance of the contract
-    Function kingdomBalance:
-        Return contract's Ether balance
-
-    // Declare custom error for insufficient funds (not used in functions)
-    Error InsufficientFunds(requested, available)
-
-    // Function to call another contract
-    Function callAnotherContract(otherContract):
-        Call receiveMessage function on otherContract with message "Hello from KingdomTreasury"
-
-    // Define an interface for another contract
-    Interface OtherContract:
-        Function receiveMessage(message)
+    
+    Function getCitizenInfo(citizen: Address) -> (UInt256, Boolean):
+        Return citizens[citizen].balance, citizens[citizen].isCitizen
+    
+    Event Deposit(citizen: Address, amount: UInt256)
+    Event Withdraw(citizen: Address, amount: UInt256)
+    Event HolidayDeclared(message: String)
+    
+    Function kingdomBalance() -> UInt256:
+        Return contract balance
+    
+    Error InsufficientFunds(requested: UInt256, available: UInt256)
+    
+    Function callAnotherContract(otherContract: Address) -> void:
+        Call IReceiver(otherContract).receiveMessage("Hello from KingdomTreasury")
