@@ -1,162 +1,77 @@
-# Kingdom Treasury Smart Contract
+# Kingdom Treasury Smart Contracts
 
-Welcome to the Kingdom Treasury Smart Contract! This Solidity smart contract is designed to manage a simple kingdom's treasury. This is where citizens can deposit and withdraw Ether, and the king can perform special actions.
+This contract suite is designed to manage a simple kingdom's treasury, where citizens can deposit and withdraw Ether, and the king can perform special actions. These contracts are ideal for managing a treasury system in a blockchain environment, potentially for a game or a decentralized organization.
 
-## Overview
+## Contracts Overview
 
-The Kingdom Treasury Smart Contract allows:
+### 1. `iReceiver.sol`
 
-- **Citizens**: Any Ethereum address can become a citizen, deposit Ether into the treasury, and withdraw their funds.
-- **King**: The contract owner (king) can perform special actions like declaring holidays.
+**Purpose:**
+- Defines an interface for a contract that can receive messages. This interface ensures that any contract implementing it will have a `receiveMessage` function.
 
-## Features
+**Functionality:**
+- The `IReceiver` interface specifies a single function `receiveMessage` that takes a `string` as an input.
 
-- **Citizen Management**: Addresses can register as citizens, enabling them to deposit and withdraw Ether.
-- **Deposit and Withdrawal**: Citizens can deposit Ether into the treasury and withdraw their funds.
-- **Special Actions by the King**: The king can declare holidays and perform other special actions.
-- **Events**: Key actions such as deposits, withdrawals, and holiday declarations are logged with events.
+### 2. `MessageReceiver.sol`
 
-## Contract Structure
+**Purpose:**
+- Implements the `IReceiver` interface. This contract can receive messages from other contracts, specifically from the `KingdomTreasury` contract.
 
-- **Contract Structure**: Defines the main blueprint for the contract.
-- **Variables**: Stores essential information such as the king's address and the total funds.
-- **Types**: Uses a struct to define citizen properties.
-- **Functions**: Includes functions for citizen registration, deposit, withdrawal, and king's actions.
-- **Visibility and Modifiers**: Ensures that only the king can perform certain actions and only citizens can deposit or withdraw.
-- **Global Variables**: Demonstrates the use of global variables like block timestamp.
-- **Operators and Conditionals**: Performs checks and balances for various operations.
-- **Arrays and Mappings**: Manages lists of citizens and their information.
-- **Events**: Logs important actions for transparency and tracking.
+**Functionality:**
+- The `MessageReceiver` contract logs received messages using an event.
+- It contains the `receiveMessage` function that emits the `MessageReceived` event when called.
 
-## Pseudo Code
+### 3. `BaseTreasury.sol`
 
-I created a pseudo code version of the contract to design and understand this smart contract better,. The pseudo code helps in visualizing the structure and logic of the contract in a simplified manner. You can find the pseudo code in this repo to get a clear idea of how the contract is organized and functions before diving into the Solidity code.
+**Purpose:**
+- Provides basic treasury functionalities that can be inherited by other contracts, such as `KingdomTreasury`.
 
-## Usage
+**Functionality:**
+- Contains a function `transferFunds` for transferring Ether from the contract to a specified recipient.
+- Includes a function `getTreasuryBalance` to check the contract's balance.
+- Emits a `FundTransfer` event whenever funds are transferred.
 
-- **Become a Citizen**: Call the `becomeCitizen` function to register as a citizen.
-- **Deposit Ether**: Use the `deposit` function to add funds to the treasury.
-- **Withdraw Ether**: Use the `withdraw` function to retrieve your funds.
-- **Declare Holiday**: If you are the king, call the `declareHoliday` function to declare a holiday.
+### 4. `KingdomTreasury.sol`
 
-## Smart Contract Code
+**Purpose:**
+- Manages a treasury for a kingdom-like system where users can become citizens, deposit funds, and withdraw funds. It also allows interaction with other contracts through the `IReceiver` interface.
 
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.25;
+**Functionality:**
+- **Variables:**
+  - `king`: The address of the king who has special privileges.
+  - `totalFunds`: The total amount of funds in the treasury.
+- **Structures:**
+  - `Citizen`: Defines a citizen with a balance and a boolean indicating if they are a citizen.
+- **Mappings:**
+  - `citizens`: Maps addresses to `Citizen` structures.
+- **Modifiers:**
+  - `onlyKing`: Restricts certain functions to be called only by the king.
+  - `onlyCitizen`: Restricts certain functions to be called only by citizens.
+- **Constructor:**
+  - Sets the deploying address as the king.
+- **Functions:**
+  - `becomeCitizen`: Allows a user to become a citizen.
+  - `deposit`: Allows citizens to deposit funds into the treasury.
+  - `withdraw`: Allows citizens to withdraw funds from the treasury.
+  - `declareHoliday`: Allows the king to declare a holiday.
+  - `getBlockTimestamp`: Returns the current block timestamp.
+  - `checkBalance`: Checks the balance of a citizen and categorizes them as "Wealthy" or "Regular".
+  - `addCitizenToList`: Adds a citizen to a list, restricted to the king.
+  - `getCitizenInfo`: Retrieves the balance and citizenship status of a citizen.
+  - `kingdomBalance`: Returns the total balance of the treasury.
+  - `callAnotherContract`: Interacts with another contract implementing the `IReceiver` interface to send a message.
 
-// Contract Structure
-contract KingdomTreasury {
+## Summary of the System
 
-    // Variables
-    address public king;
-    uint256 public totalFunds;
+- **Treasury Management:** The `KingdomTreasury` contract manages funds deposited by citizens, allowing them to deposit and withdraw Ether.
+- **Hierarchy and Roles:** The concept of a "king" is implemented, providing special privileges to the deploying address.
+- **Inter-contract Communication:** The `KingdomTreasury` contract can send messages to other contracts that implement the `IReceiver` interface, demonstrating inter-contract communication.
+- **Modular Design:** The use of interfaces and base contracts (`BaseTreasury`) promotes modularity and reusability of code.
 
-    // Types
-    struct Citizen {
-        uint256 balance;
-        bool isCitizen;
-    }
+## Use Case Scenarios
 
-    // Mappings
-    mapping(address => Citizen) public citizens;
+1. **Decentralized Organization:** This setup can be used to manage funds in a decentralized organization where members can deposit and withdraw funds, and certain privileged actions are restricted to a leader or a committee.
+2. **Game Development:** In a blockchain-based game, this system can manage in-game currency, allowing players to deposit, withdraw, and interact with other game contracts.
+3. **DAO Treasury:** It can be used in a Decentralized Autonomous Organization (DAO) where members contribute funds, and the contract ensures fair and transparent management of the treasury.
 
-    // Modifiers
-    modifier onlyKing() {
-        require(msg.sender == king, "Only the king can perform this action.");
-        _;
-    }
-
-    // Custom Modifiers
-    modifier onlyCitizen() {
-        require(citizens[msg.sender].isCitizen, "Only citizens can perform this action.");
-        _;
-    }
-
-    // Constructors
-    constructor() {
-        king = msg.sender;
-    }
-
-    // Functions
-    function becomeCitizen() public {
-        require(!citizens[msg.sender].isCitizen, "Already a citizen.");
-        citizens[msg.sender] = Citizen(0, true);
-    }
-
-    function deposit() public payable onlyCitizen {
-        citizens[msg.sender].balance += msg.value;
-        totalFunds += msg.value;
-        emit Deposit(msg.sender, msg.value);
-    }
-
-    function withdraw(uint256 amount) public onlyCitizen {
-        require(citizens[msg.sender].balance >= amount, "Insufficient balance.");
-        citizens[msg.sender].balance -= amount;
-        totalFunds -= amount;
-        payable(msg.sender).transfer(amount);
-        emit Withdraw(msg.sender, amount);
-    }
-
-    function declareHoliday() public onlyKing {
-        emit HolidayDeclared("A holiday has been declared by the king!");
-    }
-
-    // Global Variables
-    function getBlockTimestamp() public view returns (uint256) {
-        return block.timestamp;
-    }
-
-    // Operators and Conditionals
-    function checkBalance(address citizen) public view returns (string memory) {
-        if (citizens[citizen].balance > 1 ether) {
-            return "Wealthy citizen";
-        } else {
-            return "Regular citizen";
-        }
-    }
-
-    // Arrays
-    address[] public citizenList;
-
-    function addCitizenToList(address citizen) public onlyKing {
-        citizenList.push(citizen);
-    }
-
-    // Structs
-    function getCitizenInfo(address citizen) public view returns (uint256, bool) {
-        Citizen memory c = citizens[citizen];
-        return (c.balance, c.isCitizen);
-    }
-
-    // Events
-    event Deposit(address indexed citizen, uint256 amount);
-    event Withdraw(address indexed citizen, uint256 amount);
-    event HolidayDeclared(string message);
-
-    // Ether
-    function kingdomBalance() public view returns (uint256) {
-        return address(this).balance;
-    }
-
-    // Errors
-    error InsufficientFunds(uint256 requested, uint256 available);
-
-    // Inheritance
-    // This contract could inherit from a more complex contract if needed
-
-    // Calling Other Contracts
-    function callAnotherContract(address otherContract) public {
-        OtherContract(otherContract).receiveMessage("Hello from KingdomTreasury");
-    }
-
-    // Interfaces
-    interface OtherContract {
-        function receiveMessage(string memory message) external;
-    }
-}
-```
-
-## License
-
-This project is licensed under the MIT License.
+These contracts demonstrate a simple yet effective system for managing a treasury with roles and inter-contract communication capabilities, suitable for various blockchain applications.
